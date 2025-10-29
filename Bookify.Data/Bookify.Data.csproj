@@ -14,4 +14,9 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Bookify.Domain\Bookify.Domain.csproj" />
+    <ProjectReference Include="..\Bookify.service\Bookify.service.csproj" />
+  </ItemGroup>
+
 </Project>

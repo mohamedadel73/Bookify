@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
-namespace Bookify.Data.Models;
+namespace Bookify.Domain.Entities;
 
 public partial class Booking
 {
@@ -23,3 +23,5 @@ public partial class Booking
 
     public virtual Room Room { get; set; } = null!;
 }
+
+

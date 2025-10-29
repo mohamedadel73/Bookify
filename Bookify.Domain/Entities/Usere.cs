@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
-namespace Bookify.Data.Models;
+namespace Bookify.Domain.Entities;
 
 public partial class Usere
 {
@@ -17,3 +17,5 @@ public partial class Usere
 
     public virtual ICollection<Guest> Guests { get; set; } = new List<Guest>();
 }
+
+
