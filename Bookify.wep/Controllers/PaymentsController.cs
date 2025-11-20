@@ -1,15 +1,10 @@
-using System.Threading.Tasks;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Bookify.service.Repositories;
-using Bookify.Domain.Entities;
 using Bookify.wep.Models.Payments;
 
 namespace Bookify.wep.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class PaymentsController : ControllerBase
+    public class PaymentsController : Controller
     {
         private readonly IPaymentRepository _payments;
 
@@ -18,46 +13,79 @@ namespace Bookify.wep.Controllers
             _payments = payments;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> Index()
         {
             var items = await _payments.ListAsync();
-            return Ok(items.Select(p => p.ToDto()).ToList());
+            return View(items.Select(p => p.ToDto()).ToList());
         }
 
-        [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> Details(int id)
         {
             var payment = await _payments.GetByIdAsync(id);
             if (payment == null) return NotFound();
-            return Ok(payment.ToDto());
+
+            return View(payment.ToDto());
+        }
+
+        public IActionResult Create()
+        {
+            return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreatePaymentDto dto)
+        public async Task<IActionResult> Create(CreatePaymentDto dto)
         {
-            var entity = dto.ToEntity();
-            await _payments.AddAsync(entity);
-            return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity.ToDto());
+            if (!ModelState.IsValid)
+                return View(dto);
+
+            await _payments.AddAsync(dto.ToEntity());
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdatePaymentDto dto)
+        public async Task<IActionResult> Edit(int id)
         {
-            var existing = await _payments.GetByIdAsync(id);
-            if (existing == null) return NotFound();
-            dto.Apply(existing);
-            await _payments.UpdateAsync(existing);
-            return NoContent();
+            var payment = await _payments.GetByIdAsync(id);
+            if (payment == null) return NotFound();
+
+            var dto = new UpdatePaymentDto(
+                payment.BookingId,
+                payment.StripePaymentIntentId,
+                payment.Status,
+                payment.Amount,
+                payment.PaymentDate
+            );
+
+            return View(dto);
         }
 
-        [HttpDelete("{id:int}")]
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, UpdatePaymentDto dto)
+        {
+            var payment = await _payments.GetByIdAsync(id);
+            if (payment == null) return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(dto);
+
+            dto.Apply(payment);
+            await _payments.UpdateAsync(payment);
+
+            return RedirectToAction(nameof(Index));
+        }
+
         public async Task<IActionResult> Delete(int id)
         {
+            var payment = await _payments.GetByIdAsync(id);
+            if (payment == null) return NotFound();
+
+            return View(payment.ToDto());
+        }
+
+        [HttpPost, ActionName("Delete")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
             await _payments.DeleteAsync(id);
-            return NoContent();
+            return RedirectToAction(nameof(Index));
         }
     }
 }
-
-
