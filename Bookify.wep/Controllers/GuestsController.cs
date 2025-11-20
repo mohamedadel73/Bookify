@@ -1,15 +1,10 @@
-using System.Threading.Tasks;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Bookify.service.Repositories;
-using Bookify.Domain.Entities;
 using Bookify.wep.Models.Guests;
 
 namespace Bookify.wep.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class GuestsController : ControllerBase
+    public class GuestsController : Controller
     {
         private readonly IGuestRepository _guests;
 
@@ -18,46 +13,72 @@ namespace Bookify.wep.Controllers
             _guests = guests;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> Index()
         {
             var items = await _guests.ListAsync();
-            return Ok(items.Select(g => g.ToDto()).ToList());
+            return View(items.Select(g => g.ToDto()).ToList());
         }
 
-        [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> Details(int id)
         {
             var guest = await _guests.GetByIdAsync(id);
             if (guest == null) return NotFound();
-            return Ok(guest.ToDto());
+
+            return View(guest.ToDto());
+        }
+
+        public IActionResult Create()
+        {
+            return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateGuestDto dto)
+        public async Task<IActionResult> Create(CreateGuestDto dto)
         {
-            var entity = dto.ToEntity();
-            await _guests.AddAsync(entity);
-            return CreatedAtAction(nameof(GetById), new { id = entity.Gid }, entity.ToDto());
+            if (!ModelState.IsValid)
+                return View(dto);
+
+            await _guests.AddAsync(dto.ToEntity());
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateGuestDto dto)
+        public async Task<IActionResult> Edit(int id)
         {
-            var existing = await _guests.GetByIdAsync(id);
-            if (existing == null) return NotFound();
-            dto.Apply(existing);
-            await _guests.UpdateAsync(existing);
-            return NoContent();
+            var guest = await _guests.GetByIdAsync(id);
+            if (guest == null) return NotFound();
+
+            var dto = new UpdateGuestDto(guest.Phone, guest.Fullname, guest.UserId);
+            return View(dto);
         }
 
-        [HttpDelete("{id:int}")]
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, UpdateGuestDto dto)
+        {
+            var guest = await _guests.GetByIdAsync(id);
+            if (guest == null) return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(dto);
+
+            dto.Apply(guest);
+            await _guests.UpdateAsync(guest);
+
+            return RedirectToAction(nameof(Index));
+        }
+
         public async Task<IActionResult> Delete(int id)
         {
+            var guest = await _guests.GetByIdAsync(id);
+            if (guest == null) return NotFound();
+
+            return View(guest.ToDto());
+        }
+
+        [HttpPost, ActionName("Delete")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
             await _guests.DeleteAsync(id);
-            return NoContent();
+            return RedirectToAction(nameof(Index));
         }
     }
 }
-
-
